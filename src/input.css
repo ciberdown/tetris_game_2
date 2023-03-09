@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer utilities{ /*  genrate new class?? */
+  .my-class{
+      padding: 40px;
+      margin: 20px;
+      box-sizing: border-box;
+      background-color: cadetblue;
+      color: white;
+      font-size: 2em;
+      text-align: center;
+      box-shadow: 5px 5px 25px black;
+  }
+  
+}
