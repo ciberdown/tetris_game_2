@@ -10,12 +10,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="/src/output.css" rel="stylesheet" />
 
-    <script async src="../app.js"></script>
+    <script async src="./components/map.js"></script>
+    <script async src="./components/shapes.js"></script>
   </head>
   <body class="body">
-    <div
-      id="game"
-      class="relative mt-[50px] ml-[20px] h-[600px] w-[400px] bg-slate-800"
-    ></div>
+    <div class="bg-black w-full h-[500px] overflow-hidden">
+      <canvas id="canvas" height="500px" width="500px"></canvas>
+    </div>
   </body>
 </html>
