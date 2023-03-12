@@ -7,26 +7,47 @@ class Map {
     this.padding = 1;
     this.shapes = [
       [
-        [1, 0],
-        [1, 1],
-        [2, 0],
-        [2, 1],
+        [
+          [1, 0],
+          [1, 1],
+          [2, 0],
+          [2, 1],
+        ],
+        "square",
       ],
       [
-        [6, 0],
-        [7, 0],
-        [8, 0],
-        [9, 0],
+        [
+          [6, 0],
+          [7, 0],
+          [8, 0],
+          [9, 0],
+        ],
+        "rectangle",
       ],
       [
-        [7, 0],
-        [7, 1],
-        [7, 2],
-        [7, 3],
+        [
+          [7, 0],
+          [7, 1],
+          [7, 2],
+          [7, 3],
+        ],
+        "rectangle",
+      ],
+      [
+        [
+          [6, 0],
+          [7, 0],
+          [8, 0],
+          [9, 0],
+          [9, 1],
+        ],
+        "l_shape",
       ],
     ];
-    this.active_shape = this.shapes[1];
-    this.active_shape_name = "square";
+    this._game_speed = 2; //move per sec
+    this.active_shape;
+    this.active_shape_name;
+    this.stop = false;
     this.encoder = [
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -44,30 +65,119 @@ class Map {
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ];
     this.create_map();
+    this.game_logic();
+  }
+  set_active_shape(shape_num) {
+    if (shape_num === undefined) {
+      this.active_shape = this.shapes[0][0];
+      this.active_shape_name = this.shapes[0][1];
+    } else {
+      this.active_shape = this.shapes[shape_num][0];
+      this.active_shape_name = this.shapes[shape_num][1];
+    }
     this.create_shape(this.active_shape);
   }
-  correction() {}
-  rotation() {
-    let newShape;
-    if (this.active_shape_name === "square") {
-      let mid = this.active_shape[Math.floor(this.active_shape.length / 2)]; //[8,0]
-      let n = -1;
-      if (this.active_shape[0][1] === this.active_shape[1][1]) {
-        //horizantal
-        newShape = this.active_shape.map((i) => {
-          n++;
-          return [mid[0], mid[1] + n];
-        });
-      } else if (this.active_shape[1][0] === this.active_shape[0][0]) {
-        //vertical
-        newShape = this.active_shape.map((i) => {
-          n++;
-          return [mid[0] + n, mid[1]];
-        });
+  correction(newShape) {
+    newShape.forEach((dot, index) => {
+      //left
+      while (newShape[index][0] < 0) {
+        newShape = this.movment("right", newShape);
       }
-      this.clear_shape(this.active_shape);
-      this.create_shape(newShape, "green");
+      //right
+      while (newShape[index][0] >= this.encoder.length) {
+        newShape = this.movment("left", newShape);
+      }
+      //up
+      while (newShape[index][1] < 0) {
+        newShape = this.movment("down", newShape);
+      }
+      //down
+      while (newShape[index][1] >= this.encoder[0].length) {
+        newShape = this.movment("up", newShape);
+      }
+    });
+    return newShape;
+  }
+  rectangle_rotation(newShape, mid) {
+    if (this.active_shape[0][1] === this.active_shape[1][1]) {
+      //horizontal rect
+      newShape = this.active_shape.map((i, index) => {
+        return [mid[0], mid[1] + index];
+      });
+    } else if (this.active_shape[1][0] === this.active_shape[0][0]) {
+      //vertical rect
+      newShape = this.active_shape.map((i, index) => {
+        return [mid[0] + index, mid[1]];
+      });
     }
+    return newShape;
+  }
+  l_shape_rotation(newShape, mid) {
+    if (
+      this.active_shape[1][1] === this.active_shape[2][1] //horizental L
+    ) {
+      if (this.active_shape[3][0] === this.active_shape[4][0]) {
+        //---|
+        mid[1] -= 2;
+        newShape = [
+          [mid[0], mid[1]],
+          [mid[0], mid[1] + 1],
+          [mid[0], mid[1] + 2],
+          [mid[0], mid[1] + 3],
+          [mid[0] - 1, mid[1] + 3],
+        ];
+      } else {
+        mid[0] += 1;
+        mid[1] -= 1;
+        //|___
+        mid[0] -= 1;
+        mid[1] -= 1;
+        newShape = [
+          [mid[0] + 1, mid[1]],
+          [mid[0], mid[1] + 1],
+          [mid[0], mid[1] + 2],
+          [mid[0], mid[1] + 3],
+          [mid[0], mid[1]],
+        ];
+      }
+    } else if (this.active_shape[3][0] === this.active_shape[2][0]) {
+      //vertical L
+      if (this.active_shape[3][0] === this.active_shape[4][0] + 1) {
+        //_|
+        mid[0] -= 1;
+        newShape = [
+          [mid[0], mid[1] - 1],
+          [mid[0], mid[1]],
+          [mid[0] + 1, mid[1]],
+          [mid[0] + 2, mid[1]],
+          [mid[0] + 3, mid[1]],
+        ];
+      } else {
+        //|-
+        mid[0] -= 2;
+        console.log("first");
+        newShape = [
+          [mid[0], mid[1]],
+          [mid[0] + 1, mid[1]],
+          [mid[0] + 2, mid[1]],
+          [mid[0] + 3, mid[1]],
+          [mid[0] + 3, mid[1] + 1],
+        ];
+      }
+    }
+    return newShape;
+  }
+  rotation() {
+    let newShape = this.active_shape; //square has no rotation
+    let mid = this.active_shape[Math.floor(this.active_shape.length / 2)]; //[8,0]
+    if (this.active_shape_name === "rectangle") {
+      newShape = this.rectangle_rotation(newShape, mid);
+    } else if (this.active_shape_name === "l_shape") {
+      newShape = this.l_shape_rotation(newShape, mid);
+    }
+    newShape = this.correction(newShape);
+    this.clear_shape(this.active_shape);
+    this.create_shape(newShape, "green");
     this.active_shape = newShape;
   }
   permission(newShape) {
@@ -90,7 +200,8 @@ class Map {
       e.key === "a" && this.move("left");
       e.key === "w" && this.move("up");
       e.key === "s" && this.move("down");
-      e.key === " " && this.rotation();
+      e.key === " " && this.rotation(); //space
+      e.key === "Scape" && (this.stop = true); //stop game
     });
   }
   create_shape(shape, color) {
@@ -108,26 +219,31 @@ class Map {
     });
     this.create_shape(shape, "red");
   }
-  move(dir) {
-    // it has return value so pay attention
+  movment(dir, shape) {
+    shape === undefined && (shape = this.active_shape);
     let newShape;
     if (dir === "down") {
-      newShape = this.active_shape.map((i) => {
+      newShape = shape.map((i) => {
         return [i[0], i[1] + 1];
       });
     } else if (dir === "up") {
-      newShape = this.active_shape.map((i) => {
+      newShape = shape.map((i) => {
         return [i[0], i[1] - 1];
       });
     } else if (dir === "left") {
-      newShape = this.active_shape.map((i) => {
+      newShape = shape.map((i) => {
         return [i[0] - 1, i[1]];
       });
     } else if ((dir = "right")) {
-      newShape = this.active_shape.map((i) => {
+      newShape = shape.map((i) => {
         return [i[0] + 1, i[1]];
       });
     }
+    return newShape;
+  }
+  move(dir) {
+    // it has return value so pay attention
+    let newShape = this.movment(dir);
     if (this.permission(newShape)) {
       this.clear_shape(this.active_shape);
       this.create_shape(newShape, "green");
@@ -154,6 +270,21 @@ class Map {
       this.size - this.padding
     );
   }
+  game_logic() {
+    let num = 1;
+    this.set_active_shape(1);
+    let interval = setInterval(() => {
+      this.move("down");
+    }, 1000/this._game_speed);
+    setInterval(() => {
+      for (let i = 0; i < this.encoder.length; i++) {
+        if (this.encoder[i][this.encoder[0].length - 1] === 5) {
+          this.set_active_shape(2);
+        }
+      }
+    }, 200);
+  }
+
 }
 
 const map = new Map();
