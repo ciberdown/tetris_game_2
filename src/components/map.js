@@ -67,17 +67,46 @@ class Map {
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ];
     this.create_map();
-    this.game_logic();
+    this.game_logics();
   }
-  set_active_shape(shape_num) {
-    if (shape_num === undefined) {
-      this.active_shape = this.shapes[0][0];
-      this.active_shape_name = this.shapes[0][1];
-    } else {
-      this.active_shape = this.shapes[shape_num][0];
-      this.active_shape_name = this.shapes[shape_num][1];
+  set_active_shape(num) {
+    num === undefined && (num = Math.floor(Math.random() * this.shapes.length));
+    this.active_shape = this.shapes[num][0];
+    this.active_shape_name = this.shapes[num][1];
+    this.create_shape(this.shapes[num][0]);
+  }
+  set_all_red() {
+    for (let i = 0; i < this.encoder.length; i++) {
+      for (let j = 0; j < this.encoder[0].length; j++) {
+        this.encoder[i][j] = 1;
+        this.create_canvas(i, j, "red");
+      }
     }
-    this.create_shape(this.active_shape);
+  }
+  get_pos(x, y) {
+    if (x >= this.encoder.length || y >= this.encoder[0].length) {
+      console.log("length is :" + this.encoder.length, this.encoder[0].length);
+      return 0;
+    }
+    return this.encoder[x][y];
+  }
+  get_row(y) {
+    if (y >= this.encoder.length) {
+      console.log("out of order");
+      return 0;
+    }
+    return this.encoder[y];
+  }
+  get_column(x) {
+    if (x >= this.encoder[0].length) {
+      console.log("out of order");
+      return 0;
+    }
+    let arr = [];
+    for (let i = 0, len = this.encoder.length; i < len; i++) {
+      arr.push(this.encoder[i][x]);
+    }
+    return arr;
   }
   correction(newShape) {
     newShape.forEach((dot, index) => {
@@ -103,11 +132,13 @@ class Map {
   rectangle_rotation(newShape, mid) {
     if (this.active_shape[0][1] === this.active_shape[1][1]) {
       //horizontal rect
+      mid[1] = mid[1] - 2;
       newShape = this.active_shape.map((i, index) => {
         return [mid[0], mid[1] + index];
       });
     } else if (this.active_shape[1][0] === this.active_shape[0][0]) {
       //vertical rect
+      mid[0] = mid[0] - 2;
       newShape = this.active_shape.map((i, index) => {
         return [mid[0] + index, mid[1]];
       });
@@ -185,19 +216,18 @@ class Map {
   permission(newShape) {
     let per = true;
     newShape.forEach((pos) => {
-      if (this.encoder[pos[0]][pos[1]] === 2) {
-        per = false;
-        for(let i = 0; i<this.encoder.length; i++){
-          for(let j = 0; j<this.encoder[0].length; j++){
-            (this.encoder[i][j] === 5) && (this.encoder[i][j] = 2);
-          }
-        }
-        this.set_active_shape(3);
-      } else if (pos[1] < 0 || pos[1] >= this.encoder[0].length) {
-        console.log("here");
+      if (pos[1] < 0 || pos[1] >= this.encoder[0].length) {
         per = false;
       } else if (pos[0] < 0 || pos[0] >= this.encoder.length) {
         per = false;
+      } else if (this.encoder[pos[0]][pos[1]] === 2) {
+        per = false;
+        for (let i = 0; i < this.encoder.length; i++) {
+          for (let j = 0; j < this.encoder[0].length; j++) {
+            this.encoder[i][j] === 5 && (this.encoder[i][j] = 2);
+          }
+        }
+        this.set_active_shape(3);
       }
     });
     return per;
@@ -224,7 +254,9 @@ class Map {
       this.create_canvas(pos[0], pos[1], color);
       color !== "red" && (this.encoder[pos[0]][pos[1]] = 5);
     });
-    color === "red" && (this.active_shape = shape);
+    if (color !== "red") {
+      this.active_shape = shape;
+    }
   }
   clear_shape(shape) {
     shape.forEach((pos) => {
@@ -255,6 +287,9 @@ class Map {
     }
     return newShape;
   }
+  check_end_col() {
+    return this.get_column(this.encoder[0].length - 1);
+  }
   move(dir) {
     // it has return value so pay attention
     let newShape = this.movment(dir);
@@ -262,6 +297,27 @@ class Map {
       this.clear_shape(this.active_shape);
       this.create_shape(newShape, "green");
       this.active_shape = newShape;
+      if (this.check_end_col().includes(5)) {
+        //reach down
+        console.log("reach down");
+        for (let i = 0; i < this.encoder.length; i++) {
+          for (let j = 0; j < this.encoder[0].length; j++) {
+            this.encoder[i][j] === 5 && (this.encoder[i][j] = 2);
+          }
+        }
+        this.set_active_shape(); //new random shape
+      }
+      if (this.check_end_col().every((val) => val === 2)) {
+        //all down row is full
+        for (let i = 0; i < this.encoder.length; i++) {
+          for (let j = 0; j < this.encoder[0].length - 1; j++) {
+            if (this.encoder[i][j] === 2) {
+              console.log(this.encoder);
+              console.log("here a col fulled");
+            }
+          }
+        }
+      }
       return newShape;
     } else {
       return this.active_shape;
@@ -284,27 +340,8 @@ class Map {
       this.size - this.padding
     );
   }
-  game_logic() {
-    let change = false;
-    let num = 1;
-    this.set_active_shape(num);
-    this.my_interval = setInterval(() => {
-      this.move("down");
-    }, 1000 / this._game_speed);
-    setInterval(() => {
-      for (let i = 0; i < this.encoder.length; i++) {
-        if (this.encoder[i][this.encoder[0].length - 1] === 5) {
-          this.encoder[i][this.encoder[0].length - 1] = 2;
-          change = true;
-        }
-      }
-      if (change) {
-        num = (num + 1) % 4;
-        this.set_active_shape(num);
-        change = false;
-      }
-    }, 200);
+  game_logics() {
+    this.set_active_shape();
   }
 }
-
 const map = new Map();
