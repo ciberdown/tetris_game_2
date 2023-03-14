@@ -1,10 +1,12 @@
 class Map {
+  // 1 is red point,  2 is green points reach to buttom,  5 is shape still moving
   constructor() {
     this.size = 21;
     this.canvas = document.getElementById("canvas").getContext("2d");
     this.margin_left = 50;
     this.margin_top = 20;
     this.padding = 1;
+    this.my_interval;
     this.shapes = [
       [
         [
@@ -183,8 +185,20 @@ class Map {
   permission(newShape) {
     let per = true;
     newShape.forEach((pos) => {
-      (pos[1] < 0 || pos[1] >= this.encoder[0].length) && (per = false);
-      (pos[0] < 0 || pos[0] >= this.encoder.length) && (per = false);
+      if (this.encoder[pos[0]][pos[1]] === 2) {
+        per = false;
+        for(let i = 0; i<this.encoder.length; i++){
+          for(let j = 0; j<this.encoder[0].length; j++){
+            (this.encoder[i][j] === 5) && (this.encoder[i][j] = 2);
+          }
+        }
+        this.set_active_shape(3);
+      } else if (pos[1] < 0 || pos[1] >= this.encoder[0].length) {
+        console.log("here");
+        per = false;
+      } else if (pos[0] < 0 || pos[0] >= this.encoder.length) {
+        per = false;
+      }
     });
     return per;
   }
@@ -271,20 +285,26 @@ class Map {
     );
   }
   game_logic() {
+    let change = false;
     let num = 1;
-    this.set_active_shape(1);
-    let interval = setInterval(() => {
+    this.set_active_shape(num);
+    this.my_interval = setInterval(() => {
       this.move("down");
-    }, 1000/this._game_speed);
+    }, 1000 / this._game_speed);
     setInterval(() => {
       for (let i = 0; i < this.encoder.length; i++) {
         if (this.encoder[i][this.encoder[0].length - 1] === 5) {
-          this.set_active_shape(2);
+          this.encoder[i][this.encoder[0].length - 1] = 2;
+          change = true;
         }
+      }
+      if (change) {
+        num = (num + 1) % 4;
+        this.set_active_shape(num);
+        change = false;
       }
     }, 200);
   }
-
 }
 
 const map = new Map();
