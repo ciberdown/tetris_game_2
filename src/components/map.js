@@ -1,3 +1,4 @@
+//when first time last col fulled its ok and works but next treats it works wrong
 class Map {
   // 1 is red point,  2 is green points reach to buttom,  5 is shape still moving
   constructor() {
@@ -7,6 +8,7 @@ class Map {
     this.margin_top = 20;
     this.padding = 1;
     this.my_interval;
+    this.col_fulled = false;
     this.shapes = [
       [
         [
@@ -66,8 +68,8 @@ class Map {
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ];
-    this.create_map();
-    this.game_logics();
+    this.set_active_shape();
+    this.create_map(true);
   }
   set_active_shape(num) {
     num === undefined && (num = Math.floor(Math.random() * this.shapes.length));
@@ -232,21 +234,24 @@ class Map {
     });
     return per;
   }
-  create_map() {
+  create_map(add_key_logics, n) {
+    n === undefined && (n = 0);
     for (let i = 0; i < this.encoder.length; i++) {
-      for (let j = 0; j < this.encoder[0].length; j++) {
-        this.create_canvas(i, j, "red");
+      for (let j = 0; j < this.encoder[0].length - n; j++) {
+        this.encoder[i][j] === 1 && this.create_canvas(i, j + n, "red");
+        this.encoder[i][j] === 2 && this.create_canvas(i, j + n, "green");
       }
     }
-    document.getElementById("game").addEventListener("keydown", (e) => {
-      e.preventDefault();
-      e.key === "d" && this.move("right");
-      e.key === "a" && this.move("left");
-      e.key === "w" && this.move("up");
-      e.key === "s" && this.move("down");
-      e.key === " " && this.rotation(); //space
-      e.key === "Scape" && (this.stop = true); //stop game
-    });
+    add_key_logics &&
+      document.getElementById("game").addEventListener("keydown", (e) => {
+        e.preventDefault();
+        e.key === "d" && this.move("right");
+        e.key === "a" && this.move("left");
+        e.key === "w" && this.move("up");
+        e.key === "s" && this.move("down");
+        e.key === " " && this.rotation(); //space
+        e.key === "Scape" && location.reload(); //stop game
+      });
   }
   create_shape(shape, color) {
     color === undefined && (color = "green");
@@ -299,31 +304,38 @@ class Map {
       this.active_shape = newShape;
       if (this.check_end_col().includes(5)) {
         //reach down
-        console.log("reach down");
         for (let i = 0; i < this.encoder.length; i++) {
           for (let j = 0; j < this.encoder[0].length; j++) {
             this.encoder[i][j] === 5 && (this.encoder[i][j] = 2);
           }
         }
+        console.log("reach down");
         this.set_active_shape(); //new random shape
       }
       if (this.check_end_col().every((val) => val === 2)) {
-        //all down row is full
-        for (let i = 0; i < this.encoder.length; i++) {
-          for (let j = 0; j < this.encoder[0].length - 1; j++) {
-            if (this.encoder[i][j] === 2) {
-              console.log(this.encoder);
-              console.log("here a col fulled");
-            }
-          }
-        }
+        this.col_fulled_func();
       }
       return newShape;
     } else {
       return this.active_shape;
     }
   }
+  col_fulled_func() {
+    let newArr = [];
+    for (let n = 0, n_len = this.encoder.length; n < n_len; n++) {
+      this.encoder[n][19] = 1;
+    }
+    for (let i = 0, i_len = this.encoder.length; i < i_len; i++) {
+      for (let j = 0, j_len = this.encoder[0].length - 1; j < j_len; j++) {
+        if (this.encoder[i][j] === 2) {
+          newArr.push([i, j]);
+        }
+      }
+    }
+    this.create_map(false, 1);
+  }
   create_canvas(x, y, color) {
+    let a = false;
     this.canvas.fillStyle = color;
     this.canvas.fillRect(
       x * this.size + this.margin_left,
@@ -339,9 +351,6 @@ class Map {
       this.size - this.padding,
       this.size - this.padding
     );
-  }
-  game_logics() {
-    this.set_active_shape();
   }
 }
 const map = new Map();
