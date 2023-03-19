@@ -12,42 +12,43 @@ class Map {
     this.shapes = [
       [
         [
-          [1, 0],
           [1, 1],
-          [2, 0],
+          [1, 2],
           [2, 1],
+          [2, 2],
         ],
         "square",
       ],
       [
         [
-          [6, 0],
-          [7, 0],
-          [8, 0],
-          [9, 0],
+          [6, 2],
+          [7, 2],
+          [8, 2],
+          [9, 2],
         ],
         "rectangle",
       ],
       [
         [
-          [7, 0],
           [7, 1],
           [7, 2],
           [7, 3],
+          [7, 4],
         ],
         "rectangle",
       ],
       [
         [
-          [6, 0],
-          [7, 0],
-          [8, 0],
-          [9, 0],
+          [6, 1],
+          [7, 1],
+          [8, 1],
           [9, 1],
+          [9, 2],
         ],
         "l_shape",
       ],
     ];
+    this.move_count = 0;
     this._game_speed = 2; //move per sec
     this.active_shape;
     this.active_shape_name;
@@ -68,8 +69,10 @@ class Map {
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ];
-    this.set_active_shape();
-    this.create_map(true);
+    if (this.move_count === 0) {
+      this.create_map(true);
+      this.set_active_shape();
+    }
   }
   set_active_shape(num) {
     num === undefined && (num = Math.floor(Math.random() * this.shapes.length));
@@ -190,7 +193,6 @@ class Map {
       } else {
         //|-
         mid[0] -= 2;
-        console.log("first");
         newShape = [
           [mid[0], mid[1]],
           [mid[0] + 1, mid[1]],
@@ -234,12 +236,11 @@ class Map {
     });
     return per;
   }
-  create_map(add_key_logics, n) {
-    n === undefined && (n = 0);
+  create_map(add_key_logics) {
     for (let i = 0; i < this.encoder.length; i++) {
-      for (let j = 0; j < this.encoder[0].length - n; j++) {
-        this.encoder[i][j] === 1 && this.create_canvas(i, j + n, "red");
-        this.encoder[i][j] === 2 && this.create_canvas(i, j + n, "green");
+      for (let j = 0; j < this.encoder[0].length; j++) {
+        this.encoder[i][j] === 1 && this.create_canvas(i, j, "red");
+        this.encoder[i][j] === 2 && this.create_canvas(i, j, "green");
       }
     }
     add_key_logics &&
@@ -290,6 +291,10 @@ class Map {
         return [i[0] + 1, i[1]];
       });
     }
+    this.move_count++;
+    if (this.move_count === 2) {
+      this.create_map(false);
+    }
     return newShape;
   }
   check_end_col() {
@@ -321,18 +326,22 @@ class Map {
     }
   }
   col_fulled_func() {
-    let newArr = [];
-    for (let n = 0, n_len = this.encoder.length; n < n_len; n++) {
-      this.encoder[n][19] = 1;
-    }
+    let twos_arr = [];
+
     for (let i = 0, i_len = this.encoder.length; i < i_len; i++) {
-      for (let j = 0, j_len = this.encoder[0].length - 1; j < j_len; j++) {
+      for (let j = 0, j_len = this.encoder[0].length; j < j_len; j++) {
         if (this.encoder[i][j] === 2) {
-          newArr.push([i, j]);
+          this.encoder[i][j] = 1;
+          j != this.encoder[0].length - 1 && twos_arr.push([i, j + 1]);
         }
       }
     }
-    this.create_map(false, 1);
+    twos_arr.map((item) => {
+      this.encoder[item[0]][item[1]] = 2;
+    });
+    this.create_map(false, 0);
+    console.log(this.encoder);
+    console.log(twos_arr);
   }
   create_canvas(x, y, color) {
     let a = false;
